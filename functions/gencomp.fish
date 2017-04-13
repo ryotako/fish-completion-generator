@@ -64,6 +64,9 @@ OPTIONS:
             set -l a (string match -r '^[ \t]*-([^- ]),? +--([^,= ]+)=? *(.*)$' -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
+                if test -z $msg
+                    set msg $a[3]
+                end
                 set outs $outs "complete -c $cmd -s $a[2] -l $a[3] -d '$msg'"
 
                 continue
@@ -73,6 +76,9 @@ OPTIONS:
             set -l a (string match -r '^[ \t]*--([^, ]+),? +-([^-= ])=? *(.*)$' -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
+                if test -z $msg
+                    set msg $a[2]
+                end
                 set outs $outs "complete -c $cmd -s $a[3] -l $a[2] -d '$msg'"
 
                 continue
