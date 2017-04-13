@@ -30,6 +30,9 @@ OPTIONS:
                 set opts $opts v
             case -q --quiet
                 set opts $opts q
+            case '-*'
+                echo "gencomp: invalid option '$argv[1]'"
+                return
             case '*'
                 set cmds $cmds $argv[1]
         end
