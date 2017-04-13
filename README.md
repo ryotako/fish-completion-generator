@@ -3,7 +3,7 @@
 [![Build Status][travis-badge]][travis-link]
 [![Slack Room][slack-badge]][slack-link]
 
-gencomp
+generate completions for fish-shell with `--help` option
 
 ## Install
 
@@ -16,7 +16,7 @@ fisher ryotako/fish-completion-generator
 ## Usage
 
 ```fish
-gencomp
+gencomp [options] arguments
 ```
 
 [travis-link]: https://travis-ci.org/ryotako/fish-completion-generator
