@@ -101,6 +101,15 @@ OPTIONS:
 
                 continue
             end
+            
+            # -help
+            set -l a (string match -r '^[ \t]*-([^-= \t][^= \t]+)=? *(.*)$' -- $line)
+            if test $status = 0
+                set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
+                set outs $outs "complete -c $cmd -o $a[2] -d '$msg'"
+
+                continue
+            end
 
         end
 
