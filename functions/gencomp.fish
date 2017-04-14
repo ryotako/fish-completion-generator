@@ -61,7 +61,7 @@ OPTIONS:
         for line in (echo $lines)
             
             # -h, --help    help message like this
-            set -l a (string match -r '^[ \t]*-([^- ]),? +--([^,= ]+)=? *(.*)$' -- $line)
+            set -l a (string match -r '^[ \t]*-([^- \t]),? +--([^,= \t]+)=? *(.*)$' -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
                 if test -z $msg
@@ -73,7 +73,7 @@ OPTIONS:
             end
 
             # --help, -h    help message like this
-            set -l a (string match -r '^[ \t]*--([^, ]+),? +-([^-= ])=? *(.*)$' -- $line)
+            set -l a (string match -r '^[ \t]*--([^, \t]+),? +-([^-= \t])=? *(.*)$' -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
                 if test -z $msg
@@ -85,7 +85,7 @@ OPTIONS:
             end
 
             # --help    help message like this
-            set -l a (string match -r '^[ \t]*--([^,= ]+)=? *(.*)$' -- $line)
+            set -l a (string match -r '^[ \t]*--([^,= \t]+)=? *(.*)$' -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
                 set outs $outs "complete -c $cmd -l $a[2] -d '$msg'"
@@ -94,7 +94,7 @@ OPTIONS:
             end
 
             # -h    help message like this
-            set -l a (string match -r '^[ \t]*-([^-= ])=? *(.*)$' -- $line)
+            set -l a (string match -r '^[ \t]*-([^-= \t])(?:= *| +)(.*)$' -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
                 set outs $outs "complete -c $cmd -s $a[2] -d '$msg'"
