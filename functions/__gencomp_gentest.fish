@@ -5,7 +5,7 @@ function __gencomp_gentest -a cmd -d 'generate scaffold of test file'
     end
 
     function __gencomp_escape
-        cat | string replace \" \\\" | string replace \$ \\\$
+        cat | string replace -a \" \\\" | string replace -a \$ \\\$
     end
 
     eval "$cmd --version" ^&1 | read -l version
