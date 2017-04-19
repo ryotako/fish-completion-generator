@@ -18,12 +18,31 @@ OPTIONS:
 "
     end
 
+    function __gencomp_ls -V gencomp_dir
+        ls $gencomp_dir | string match -r '.*(?=\.fish$)'
+    end
+
+    function __gencomp_rm -V gencomp_dir
+        for cmd in $argv
+            if contains $cmd (__gencomp_ls)
+                rm "$gencomp_dir/$cmd.fish"
+            end
+        end
+    end
+
     set -l cmds
     set -l opts
     while count $argv >/dev/null
         switch $argv[1]
-            case -h --help
+            case help -h --help
                 __gencomp_help
+                return
+            case ls
+                __gencomp_ls
+                return
+            case rm
+                set -e argv[1]
+                __gencomp_rm $argv
                 return
             case -p --print
                 set opts $opts p
