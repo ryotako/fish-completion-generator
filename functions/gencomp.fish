@@ -1,5 +1,6 @@
 function gencomp -d 'generate completions for fish-shell with usage messages'
-    
+    set -l gencomp_dir ~/.config/fish/generated_completions
+
     function __gencomp_help
         string trim "
 NAME:
@@ -108,8 +109,13 @@ OPTIONS:
             if begin; contains v $opts; or contains p $opts; end
                 echo $out
             end
+
             if not contains p $opts
-                eval $out
+                if not test -d "$gencomp_dir"
+                    mkdir -p "$gencomp_dir"
+                end
+                echo "$out" >> "$gencomp_dir/$cmd.fish"
+                eval "$out"
             end
         end
 
