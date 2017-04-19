@@ -1,3 +1,4 @@
-test "description"
-	-n "expression"
+test "compgen"
+    compgen
 end
+
