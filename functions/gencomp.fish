@@ -1,6 +1,11 @@
 function gencomp -d 'generate completions for fish-shell with usage messages'
-    set -l gencomp_dir ~/.config/fish/generated_completions
 
+    # variables
+    if test -z "$gencomp_dir"
+        set -gx gencomp_dir ~/.config/fish/generated_completions
+    end
+
+    # help command
     function __gencomp_help
         string trim "
 NAME:
