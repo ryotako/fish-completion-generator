@@ -10,9 +10,7 @@ function __gencomp_gentest -a cmd -d 'generate scaffold of test file'
 
     eval "$cmd --version" ^&1 | read -l version
     eval "$cmd --help" ^&1 | __gencomp_escape | read -z -l help
-    for comp in (gencomp $cmd)
-        eval $comp
-    end
+    # gencomp $cmd
     complete -C"$cmd -" | sort | uniq | __gencomp_escape | read -z -l candidates
 
     string trim "
