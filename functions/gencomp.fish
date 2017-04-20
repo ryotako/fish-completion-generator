@@ -90,6 +90,7 @@ OPTIONS:
             continue
         end
 
+        set -l section default
         set -l outs
         for line in (echo $lines)
             set -l i '^[ \t]*' # indent
@@ -97,6 +98,43 @@ OPTIONS:
             set -l t '(?:[,=][ \t]*|[ \t]+)' # tab
             set -l c '[\w\?!@]' # charactors
             set -l C '[\w\?!@-]' # charactors including -
+
+            # COMMANDS:
+            if string match -iqr "^ *commands? *: *\$" -- $line
+                set section command
+
+                continue
+            end
+            
+            if test $section = command
+                # c, command  description for command
+                set -l a (string match -r "$i($c+)(?:, *| )($c+)$t(.*)\$" -- $line)
+                if test $status = 0
+                    set -l sub
+                    if test (string length -- "$a[2]") -gt (string length -- "$a[3]")
+                        set sub "$a[2]"
+                    else
+                        set sub "$a[3]"
+                    end
+                    set -l msg (string replace -a \' \\\' -- "$a[4]")
+
+                    set outs $outs "complete -f -c $cmd -n '__fish_use_subcommand' -a '$sub' -d '$msg'"
+                    set section command
+                    continue
+                end
+
+                # command  description for command
+                set -l a (string match -r "$i($c+)$t(.*)\$" -- $line)
+                if test $status = 0
+                    set -l msg (string replace -a \' \\\' -- "$a[3]")
+
+                    set outs $outs "complete -f -c $cmd -n '__fish_use_subcommand' -a '$a[2]' -d '$msg'"
+                    set section command
+                    continue
+                end
+
+                set section default
+            end
             
             # -h, --help    help message like this
             set -l a (string match -r "$i-($c)$d--($C+)$t(.*)\$" -- $line)
