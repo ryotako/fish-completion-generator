@@ -20,8 +20,8 @@ COMMANDS:
     help    Show this help
 
 OPTIONS:
-    -v, --verbose   print commands for completion
-    -p, --print     print commands for completion without execution
+    -v, --verbose   print generated completion commands
+    -p, --print     print completion commands without execution
     -q, --quiet     suppress error messages
 
     -h, --help      show this help
