@@ -71,6 +71,7 @@ OPTIONS:
         set -e argv[1]
     end
 
+    # loop for each command
     for cmd in $cmds
         
         # command is available?
@@ -92,7 +93,7 @@ OPTIONS:
         set -l outs
         for line in (echo $lines)
             set -l i '^[ \t]*' # indent
-            set -l d '(?:,[ \t]*|[ \t]+)' # delimiter
+            set -l d '(?:,[ \t]*|[ \t]+|[ \t]\|[ \t])' # delimiter
             set -l t '(?:[,=][ \t]*|[ \t]+)' # tab
             set -l c '[\w\?!@]' # charactors
             set -l C '[\w\?!@-]' # charactors including -
@@ -100,7 +101,7 @@ OPTIONS:
             # -h, --help    help message like this
             set -l a (string match -r "$i-($c)$d--($C+)$t(.*)\$" -- $line)
             if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
+                set -l msg (string replace -a \' \\\' -- "$a[4]")
                 if test -z $msg
                     set msg $a[3]
                 end
@@ -112,7 +113,7 @@ OPTIONS:
             # --help, -h    help message like this
             set -l a (string match -r "$i--($C+)$d-($c)$t(.*)\$" -- $line)
             if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
+                set -l msg (string replace -a \' \\\' -- "$a[4]")
                 if test -z $msg
                     set msg $a[2]
                 end
@@ -124,7 +125,7 @@ OPTIONS:
             # --help    help message like this
             set -l a (string match -r "$i--($C+)$t(.*)\$" -- $line)
             if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
+                set -l msg (string replace -a \' \\\' -- "$a[3]")
                 set outs $outs "complete -c $cmd -l $a[2] -d '$msg'"
 
                 continue
@@ -133,7 +134,7 @@ OPTIONS:
             # -h    help message like this
             set -l a (string match -r "$i-($c)$t(.*)\$" -- $line)
             if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
+                set -l msg (string replace -a \' \\\' -- "$a[3]")
                 set outs $outs "complete -c $cmd -s $a[2] -d '$msg'"
 
                 continue
@@ -142,7 +143,7 @@ OPTIONS:
             # -help
             set -l a (string match -r "$i-($c$C+)$t(.*)\$" -- $line)
             if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
+                set -l msg (string replace -a \' \\\' -- "$a[3]")
                 set outs $outs "complete -c $cmd -o $a[2] -d '$msg'"
 
                 continue
@@ -151,7 +152,7 @@ OPTIONS:
             # [-no]-option  enable/disable ...
             set -l a (string match -r "$i\[-no\]-($c$C+)$t(.*)\$" -- $line)
             if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
+                set -l msg (string replace -a \' \\\' -- "$a[3]")
                 set outs $outs "complete -c $cmd -o $a[2] -d '$msg'"
                 set outs $outs "complete -c $cmd -o no-$a[2] -d '$msg'"
 
