@@ -91,9 +91,14 @@ OPTIONS:
 
         set -l outs
         for line in (echo $lines)
+            set -l i '^[ \t]*' # indent
+            set -l d '(?:,[ \t]*|[ \t]+)' # delimiter
+            set -l t '(?:[,=][ \t]*|[ \t]+)' # tab
+            set -l c '[\w\?!@]' # charactors
+            set -l C '[\w\?!@-]' # charactors including -
             
             # -h, --help    help message like this
-            set -l a (string match -r '^[ \t]*-([^- \t]),? +--([^,= \t]+)=? *(.*)$' -- $line)
+            set -l a (string match -r "$i-($c)$d--($C+)$t(.*)\$" -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
                 if test -z $msg
@@ -105,7 +110,7 @@ OPTIONS:
             end
 
             # --help, -h    help message like this
-            set -l a (string match -r '^[ \t]*--([^, \t]+),? +-([^-= \t])=? *(.*)$' -- $line)
+            set -l a (string match -r "$i--($C+)$d-($c)$t(.*)\$" -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[4..-1]")
                 if test -z $msg
@@ -117,7 +122,7 @@ OPTIONS:
             end
 
             # --help    help message like this
-            set -l a (string match -r '^[ \t]*--([^,= \t]+)=? *(.*)$' -- $line)
+            set -l a (string match -r "$i--($C+)$t(.*)\$" -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
                 set outs $outs "complete -c $cmd -l $a[2] -d '$msg'"
@@ -126,7 +131,7 @@ OPTIONS:
             end
 
             # -h    help message like this
-            set -l a (string match -r '^[ \t]*-([^-= \t])(?:= *| +)(.*)$' -- $line)
+            set -l a (string match -r "$i-($c)$t(.*)\$" -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
                 set outs $outs "complete -c $cmd -s $a[2] -d '$msg'"
@@ -135,7 +140,7 @@ OPTIONS:
             end
             
             # -help
-            set -l a (string match -r '^[ \t]*-([^-= \t][^= \t]+)=? *(.*)$' -- $line)
+            set -l a (string match -r "$i-($c$C+)$t(.*)\$" -- $line)
             if test $status = 0
                 set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
                 set outs $outs "complete -c $cmd -o $a[2] -d '$msg'"
@@ -143,20 +148,30 @@ OPTIONS:
                 continue
             end
 
+            # [-no]-option  enable/disable ...
+            set -l a (string match -r "$i\[-no\]-($c$C+)$t(.*)\$" -- $line)
+            if test $status = 0
+                set -l msg (string replace -a \' \\\' -- "$a[3..-1]")
+                set outs $outs "complete -c $cmd -o $a[2] -d '$msg'"
+                set outs $outs "complete -c $cmd -o no-$a[2] -d '$msg'"
+
+                continue
+            end
+
+        end
+        
+
+        if begin; contains v $opts; or contains p $opts; end
+            string join \n $outs
         end
 
-        for out in $outs
-            if begin; contains v $opts; or contains p $opts; end
-                echo $out
+        if not contains p $opts
+            if not test -d "$gencomp_dir"
+                mkdir -p "$gencomp_dir"
             end
 
-            if not contains p $opts
-                if not test -d "$gencomp_dir"
-                    mkdir -p "$gencomp_dir"
-                end
-                echo "$out" >> "$gencomp_dir/$cmd.fish"
-                eval "$out"
-            end
+            string join \n $outs > "$gencomp_dir/$cmd.fish"
+            eval (string join '; ' $outs)
         end
 
     end
