@@ -12,7 +12,12 @@ NAME:
     gencomp - Completion generator for fish-shell
 
 USAGE:
-    gencomp [options] arguments...
+    gencomp [options] [command] [arguments...]
+
+COMMANDS:
+    ls      List generated completions
+    rm      Remove generated completions 
+    help    Show this help
 
 OPTIONS:
     -v, --verbose   print commands for completion
@@ -23,10 +28,12 @@ OPTIONS:
 "
     end
 
+    # ls command
     function __gencomp_ls -V gencomp_dir
         ls $gencomp_dir | string match -r '.*(?=\.fish$)'
     end
-
+    
+    # rm command 
     function __gencomp_rm -V gencomp_dir
         for cmd in $argv
             if contains $cmd (__gencomp_ls)
