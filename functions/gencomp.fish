@@ -100,7 +100,7 @@ OPTIONS:
             set -l C '[\w\?!@-]' # charactors including -
 
             # COMMANDS:
-            if string match -iqr "^ *commands? *: *\$" -- $line
+            if string match -iqr "^([\w ]* )?commands?( [\w ]*)?:\$" -- $line
                 set section command
 
                 continue
