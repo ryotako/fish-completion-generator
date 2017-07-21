@@ -1,1 +1,7 @@
-complete -c gencomp -d 'generate completions for fish-shell with usage messages'
+complete -c gencomp -s l -l list -d 'list generated completions'
+complete -c gencomp -s e -l erase -d 'erase generated completions'
+complete -c gencomp -s d -l dry-run -d 'print completions without saving'
+complete -c gencomp -s r -l root -d 'print the directory to save completions'
+complete -c gencomp -s s -l subcommand -d 'generate completion for subcommands'
+complete -c gencomp -s u -l use -d 'use the specified command to get usage'
+complete -c gencomp -s h -l help -d 'show this help'
