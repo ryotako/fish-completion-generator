@@ -1,217 +1,215 @@
 function gencomp -d 'generate completions for fish-shell with usage messages'
-
-    # variables
+    # variable
     if test -z "$gencomp_dir"
-        set -gx gencomp_dir ~/.config/fish/generated_completions
+        if test -z "XDG_CONFIG_HOME"
+            set -g gencomp_dir "$XDG_CONFIG_HOME/fish/generated_completions"
+        else
+            set -g gencomp_dir "$HOME/.config/fish/generated_completions"
+        end
     end
 
     # help command
-    function __gencomp_help
-        string trim "
-NAME:
-    gencomp - Completion generator for fish-shell
-
-USAGE:
-    gencomp [options] [command] [arguments...]
-
-COMMANDS:
-    ls      List generated completions
-    rm      Remove generated completions 
-    help    Show this help
-
-OPTIONS:
-    -v, --verbose   print generated completion commands
-    -p, --print     print completion commands without execution
-    -q, --quiet     suppress error messages
-
-    -h, --help      show this help
-"
+    function __gencomp_usage
+        echo "NAME:"
+        echo "    gencomp - Completion generator for fish-shell"
+        echo
+        echo "USAGE:"
+        echo "    gencomp [options] [command] [arguments...]"
+        echo
+        echo "OPTIONS:"
+        echo "    -l, --list"
+        echo "    -e, --erase"
+        echo "    -d, --dry-run"
+        echo "    -r, --root"
+        echo "    -s, --subcommand"
+        echo "    -u, --use"
+        echo
+        echo "    -h, --help      show this help"
     end
 
-    # ls command
-    function __gencomp_ls -V gencomp_dir
-        ls $gencomp_dir | string match -r '.*(?=\.fish$)'
-    end
-    
-    # rm command 
-    function __gencomp_rm -V gencomp_dir
-        for cmd in $argv
-            if contains $cmd (__gencomp_ls)
-                rm "$gencomp_dir/$cmd.fish"
-            end
+    function __gencomp_option_completion -a cmd sub short long old desc
+        echo -n "complete -c $cmd"
+        if test "$long" = version
+            echo -n " -n __fish_no_arguments"
+        else if test -n "$sub"
+            echo -n ' -n '(string escape -- "__fish_seen_subcommand_from $sub")
         end
-    end
-
-    set -l cmds
-    set -l opts
-    while count $argv >/dev/null
-        switch $argv[1]
-            case help -h --help
-                __gencomp_help
-                return
-            case ls
-                __gencomp_ls
-                return
-            case rm
-                set -e argv[1]
-                __gencomp_rm $argv
-                return
-            case -p --print
-                set opts $opts p
-            case -v --verbose
-                set opts $opts v
-            case -q --quiet
-                set opts $opts q
-            case '-*'
-                echo "gencomp: invalid option '$argv[1]'"
-                return
-            case '*'
-                set cmds $cmds $argv[1]
-        end
-        set -e argv[1]
+        test -n "$short" ; and echo -n ' -s '(string escape -- "$short")
+        test -n "$long"  ; and echo -n ' -l '(string escape -- "$long")
+        test -n "$old"   ; and echo -n ' -s '(string escape -- "$old")
+        test -n "$desc"  ; and echo -n ' -d '(string trim "$desc" | string escape)
+        echo
     end
 
-    # loop for each command
-    for cmd in $cmds
-        
-        # command is available?
-        if not type -q $cmd
-            contains q $opts
-            or echo "gencomp: command '$cmd' is not found" >/dev/stderr
-            continue
-        end
+    function __gencomp_subcommand_completion -a cmd sub desc
+        echo -n "complete -f -c $cmd"
+        echo -n " -n __fish_use_subcommand -a "(string escape -- "$sub")
+        echo -n " -d "(string trim "$desc" | string escape)
+        echo
+    end
 
-        eval "$cmd --help" ^&1 | read -z -l lines
-
-        # --help option is available?
-        if test $status != 0
-            contains q $opts
-            or echo "gencomp: '$cmd --help' is not available" >/dev/stderr
-            continue
-        end
-
+    function __gencomp_parse -a cmd sub usage parse_subcommand
         set -l section default
-        set -l outs
-        for line in (echo $lines)
-            set -l i '^[ \t]*' # indent
-            set -l d '(?:,[ \t]*|[ \t]+|[ \t]\|[ \t])' # delimiter
-            set -l t '(?:[,=][ \t]*|[ \t]+)' # tab
-            set -l c '[\w\?!@]' # charactors
-            set -l C '[\w\?!@-]' # charactors including -
 
-            # COMMANDS:
-            if string match -iqr "^([\w ]* )?commands?( [\w ]*)?:\$" -- $line
+        eval (string replace -a -- "{}" "$cmd $sub" "$usage") 2>&1 | tr \t ' ' | while read -l line
+
+            # parse subcommand
+            if string match -iqr "^([\w ]* )?commands?( [\w ]*)?" -- "$line"
                 set section command
-
                 continue
             end
-            
-            if test $section = command
-                # c, command  description for command
-                set -l a (string match -r "$i($c+)(?:, *| )($c+)$t(.*)\$" -- $line)
-                if test $status = 0
-                    set -l sub
-                    if test (string length -- "$a[2]") -gt (string length -- "$a[3]")
-                        set sub "$a[2]"
-                    else
-                        set sub "$a[3]"
+
+            if test "$section" = command -a -z "$sub"
+
+                # e.g.)
+                # COMMANDS
+                #     command, c   do something
+                set -l words (string match -r -- '^ +([\w-]+)(?:, *)\w(?:[,= ] *)(.*)' "$line")
+                if test (count $words) = 3
+                    __gencomp_subcommand_completion "$cmd" "$words[2]" "$words[3]"
+                    if test "$parse_subcommand" = true
+                        __gencomp_parse "$cmd" "$words[2]" "$usage" false
                     end
-                    set -l msg (string replace -a \' \\\' -- "$a[4]")
-
-                    set outs $outs "complete -f -c $cmd -n '__fish_use_subcommand' -a '$sub' -d '$msg'"
-                    set section command
                     continue
                 end
 
-                # command  description for command
-                set -l a (string match -r "$i($c+)$t(.*)\$" -- $line)
-                if test $status = 0
-                    set -l msg (string replace -a \' \\\' -- "$a[3]")
-
-                    set outs $outs "complete -f -c $cmd -n '__fish_use_subcommand' -a '$a[2]' -d '$msg'"
-                    set section command
+                # e.g.)
+                # COMMANDS
+                #     command    do simething
+                set -l words (string match -r -- '^ +(\w+)(?:[,= ] *)(.*)' "$line")
+                if test (count $words) = 3
+                    __gencomp_subcommand_completion "$cmd" "$words[2]" "$words[3]"
+                    if test "$parse_subcommand" = true
+                        __gencomp_parse "$cmd" "$words[2]" "$usage" false
+                    end
                     continue
                 end
-
+                
                 set section default
             end
-            
-            # -h, --help    help message like this
-            set -l a (string match -r "$i-($c)$d--($C+)$t(.*)\$" -- $line)
-            if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[4]")
-                if test -z $msg
-                    set msg $a[3]
-                end
-                set outs $outs "complete -c $cmd -s $a[2] -l $a[3] -d '$msg'"
 
-                continue
-            end
+            # parse options
 
-            # --help, -h    help message like this
-            set -l a (string match -r "$i--($C+)$d-($c)$t(.*)\$" -- $line)
-            if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[4]")
-                if test -z $msg
-                    set msg $a[2]
-                end
-                set outs $outs "complete -c $cmd -s $a[3] -l $a[2] -d '$msg'"
-
-                continue
-            end
-
-            # --help    help message like this
-            set -l a (string match -r "$i--($C+)$t(.*)\$" -- $line)
-            if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3]")
-                set outs $outs "complete -c $cmd -l $a[2] -d '$msg'"
-
-                continue
-            end
-
-            # -h    help message like this
-            set -l a (string match -r "$i-($c)$t(.*)\$" -- $line)
-            if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3]")
-                set outs $outs "complete -c $cmd -s $a[2] -d '$msg'"
-
+            # e.g.) -h, --help  show help
+            set -l words (string match -r -- "^ *-(\w)(?:, | )--(\w[\w-]+) +(.*)" "$line")
+            if test (count $words) = 4
+                __gencomp_option_completion "$cmd" "$sub" "$words[2]" "$words[3]" "" "$words[4]"
                 continue
             end
             
-            # -help
-            set -l a (string match -r "$i-($c$C+)$t(.*)\$" -- $line)
-            if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3]")
-                set outs $outs "complete -c $cmd -o $a[2] -d '$msg'"
-
+            # e.g.) --help, -h  show help
+            set -l words (string match -r -- "^ *--(\w[\w-]+)(?:, | )-(\w) +(.*)" "$line")
+            if test (count $words) = 4
+                __gencomp_option_completion "$cmd" "$sub" "$words[3]" "$words[2]" "" "$words[4]"
                 continue
             end
 
-            # [-no]-option  enable/disable ...
-            set -l a (string match -r "$i\[-no\]-($c$C+)$t(.*)\$" -- $line)
-            if test $status = 0
-                set -l msg (string replace -a \' \\\' -- "$a[3]")
-                set outs $outs "complete -c $cmd -o $a[2] -d '$msg'"
-                set outs $outs "complete -c $cmd -o no-$a[2] -d '$msg'"
+            # e.g.) --help  shiw help
+            set -l words (string match -r -- "^ *--(\w[\w-]+) +(.*)" "$line")
+            if test (count $words) = 3
+                __gencomp_option_completion "$cmd" "$sub" "" "$words[2]" "" "$words[3]"
+                continue
+            end
 
+            # e.g.) -h  shiw help
+            set -l words (string match -r -- "^ *-(\w) +(.*)" "$line")
+            if test (count $words) = 3
+                __gencomp_option_completion "$cmd" "$sub" "$words[2]" "" "" "$words[3]"
+                continue
+            end
+
+            # e.g.) -help  shiw help
+            set -l words (string match -r -- "^ *-(\w[\w-]+) +(.*)" "$line")
+            if test (count $words) = 3
+                __gencomp_option_completion "$cmd" "$sub" "" "" "$words[2]" "$words[3]"
                 continue
             end
 
         end
-        
+    end
 
-        if begin; contains v $opts; or contains p $opts; end
-            string join \n $outs
+    set -l key
+    set -l value
+    set -l action
+    set -l commands
+    set -l is_dry_run false
+    set -l parse_subcommand false
+    set -l usage "{} --help"
+
+    argu {e,erase} {l,list} {d,dry-run} {h,help} {r,root} {s,subcommand} {u,use}:\
+        -- $argv | while read key value
+        switch "$key"
+            case _
+                set commands $commands "$value"
+            case -e --erase
+                set action erase 
+            case -l --list
+                set action list
+            case -d --dry-run
+                set is_dry_run true
+            case -r --root
+                echo "$gencomp_dir"
+                return
+            case -s --subcommand
+                set parse_subcommand true
+            case -u --use
+                set usage "$value"
+            case -h --help
+                __gencomp_usage
+                return
         end
+    end
 
-        if not contains p $opts
-            if not test -d "$gencomp_dir"
-                mkdir -p "$gencomp_dir"
+    # default action
+    if test -z "$action"
+        if count $commands >/dev/null
+            set action complete
+        else
+            set list
+        end
+    end
+    
+    # subcommand parsing requires a place holder in $usage
+    if not string match -q "*{}*" -- "$usage"
+        set parse_subcommand false
+    end
+
+    switch "$action"
+        case erase
+            for command in $commands
+                if test -f "$gencomp_dir/$command.fish"
+                    rm "$gencomp_dir/$command.fish"
+                end
             end
+        case list
+            for path in "$gencomp_dir"/*.fish
+                basename "$path" .fish 
+            end
+        case complete
 
-            string join \n $outs > "$gencomp_dir/$cmd.fish"
-            eval (string join '; ' $outs)
-        end
+            for command in $commands
+                if not type -q "$command"
+                    echo "gencomp: command '$command' is not found" >&2
+                    continue
+                end
+
+                if test "$is_dry_run" != true
+                    mkdir -p "$gencomp_dir"
+                    or continue
+
+                    echo > "$gencomp_dir/$command.fish"
+                    or continue
+                end
+
+                for completion in (__gencomp_parse "$command" "" "$usage" "$parse_subcommand")
+                    if test "$is_dry_run" = true
+                        echo "$completion"
+                    else
+                        eval "$completion"
+                        and echo "$completion" >> "$gencomp_dir/$command.fish"
+                    end
+                end
+            end 
 
     end
 end
