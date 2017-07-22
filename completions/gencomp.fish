@@ -1,5 +1,5 @@
 complete -c gencomp -s l -l list -d 'list generated completions'
-complete -c gencomp -s e -l erase -d 'erase generated completions'
+complete -x -c gencomp -s e -l erase -a '(gencomp --list)' -d 'erase generated completions'
 complete -c gencomp -s d -l dry-run -d 'print completions without saving'
 complete -c gencomp -s r -l root -d 'print the directory to save completions'
 complete -c gencomp -s s -l subcommand -d 'generate completion for subcommands'
