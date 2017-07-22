@@ -16,8 +16,20 @@ fisher ryotako/fish-completion-generator
 ## Usage
 
 ```fish
-gencomp [options] arguments
+USAGE:
+    gencomp [options] [commands names...]
+
+OPTIONS:
+    -l, --list        list generated completions
+    -e, --erase       erase generated completions
+    -d, --dry-run     print completions without saving
+    -r, --root        print the directory to save completions
+    -s, --subcommand  generate completion for subcommands
+    -u, --use         use the specified command to get usage
+                      ``{}'' is replaced with the arguments
+    -h, --help        show this help
 ```
+
 
 [travis-link]: https://travis-ci.org/ryotako/fish-completion-generator
 [travis-badge]: https://img.shields.io/travis/ryotako/fish-completion-generator.svg

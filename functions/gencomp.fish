@@ -14,7 +14,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "    gencomp - Completion generator for fish-shell"
         echo
         echo "USAGE:"
-        echo "    gencomp [options] [command] [arguments...]"
+        echo "    gencomp [options] [command names...]"
         echo
         echo "OPTIONS:"
         echo "    -l, --list        list generated completions"
@@ -25,6 +25,8 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "    -u, --use         use the specified command to get usage"
         echo "                      ``{}'' is replaced with the arguments"
         echo "    -h, --help        show this help"
+        echo "VARIABLES:"
+        echo "    gencomp_dir       directory to save completions"
         echo
         echo "EXAMPLES:"
         echo "    gencomp peco"
