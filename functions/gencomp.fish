@@ -133,7 +133,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         end
     end
 
-    set -l key
+    set -l key unparsed
     set -l value
     set -l action
     set -l commands
@@ -147,9 +147,9 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
             case _
                 set commands $commands "$value"
             case -e --erase
-                set action erase 
+                set action $action erase 
             case -l --list
-                set action list
+                set action $action list
             case -d --dry-run
                 set is_dry_run true
             case -r --root
@@ -165,13 +165,22 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         end
     end
 
+    if begin count $argv >/dev/null; and test "$key" = unparsed; end
+        return 1
+    else if test (count $action) -gt 1
+        echo "gencomp: invalid option combinaton" >&2
+        return 1
+    else if test -n "$action" -a "$is_dry_run" = true
+        echo "gencomp: invalid option combinaton" >&2
+        return 1
+    else if test -n "$action" -a "$parse_subcommand" = true
+        echo "gencomp: invalid option combinaton" >&2
+        return 1
+    end
+
     # default action
     if test -z "$action"
-        if count $commands >/dev/null
-            set action complete
-        else
-            set action list
-        end
+        set action (count $commands >/dev/null; and echo complete; or echo list)
     end
     
     # subcommand parsing requires a place holder in $usage
