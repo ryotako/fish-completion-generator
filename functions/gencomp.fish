@@ -69,7 +69,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 # e.g.)
                 # COMMANDS
                 #     command, c   do something
-                set -l words (string match -r -- '^([\w-]+)(?:, *)\w(?:[,= ] *)(.*)' "$line")
+                set -l words (string match -r -- '^ +([\w-]+)(?:, *)\w(?:[,= ] *)(.*)' "$line")
                 if test (count $words) = 3
                     __gencomp_subcommand_completion "$cmd" "$words[2]" "$words[3]"
                     if test "$parse_subcommand" = true
@@ -81,7 +81,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 # e.g.)
                 # COMMANDS
                 #     command    do simething
-                set -l words (string match -r -- '^(\w+)(?:[,= ] *)(.*)' "$line")
+                set -l words (string match -r -- '^ +(\w+)(?:[,= ] *)(.*)' "$line")
                 if test (count $words) = 3
                     __gencomp_subcommand_completion "$cmd" "$words[2]" "$words[3]"
                     if test "$parse_subcommand" = true
