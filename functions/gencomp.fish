@@ -143,9 +143,12 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
     set -l parse_subcommand false
     set -l usage "{} --help"
 
-    argu {e,erase} {l,list} {d,dry-run} {h,help} {r,root} {s,subcommand} {u,use}:\
-        -- $argv | while read key value
-        switch "$key"
+    begin 
+        argu {e,erase} {l,list} {d,dry-run} {h,help} {r,root} {s,subcommand}\
+            {u,use}: -- $argv
+        or return 1
+    end | while read key value
+         switch "$key"
             case _
                 set commands $commands "$value"
             case -e --erase
