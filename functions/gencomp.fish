@@ -17,13 +17,15 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "    gencomp [options] [command names...]"
         echo
         echo "OPTIONS:"
-        echo "    -l, --list        list generated completions"
-        echo "    -e, --erase       erase generated completions"
         echo "    -d, --dry-run     print completions without saving"
+        echo "    --edit            edit a generated completion"
+        echo "    --erase           erase generated completions"
+        echo "    -l, --list        list generated completions"
         echo "    -r, --root        print the directory to save completions"
-        echo "    -s, --subcommand  generate completion for subcommands"
+        echo "    -S, --subcommand  generate completion for subcommands"
         echo "    -u, --use         use the specified command to get usage"
         echo "                      ``{}'' is replaced with the arguments"
+        echo "    -w, --wraps       inherit existing completions"
         echo "    -h, --help        show this help"
         echo "VARIABLES:"
         echo "    gencomp_dir       directory to save completions"
@@ -145,17 +147,17 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
     set -l is_wrap_mode false
     set -l is_subcmd_parse_mode false
 
-    begin 
-        argu {e,erase} {l,list} {d,dry-run} {h,help} {r,root} {s,subcommand}\
-            {u,use}: -- $argv
-        or return 1
-    end | while read key value
+    argu {d,dry-run} {edit} {erase} {l,list} {r,root} {S,subcommand}\
+            {u,use}: {w,wraps}:: {h,help} -- $argv | while read key value
          switch "$key"
             case _
                 set commands $commands "$value"
 
             case -d --dry-run
                 set is_dry_run true
+
+            case --edit
+                set action $action edit
 
             case --erase
                 set action $action erase 
@@ -174,6 +176,10 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 set use_command $use_commands $value
 
             case -w --wraps
+                set is_wrap_mode true
+                test -n "$value"
+                and set wrap_commands $wrap_commands $value
+
             case -h --help
                 __gencomp_usage
                 return
@@ -187,6 +193,9 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "gencomp: invalid option combinaton" >&2
         return 1
     else if test -n "$action" -a "$is_dry_run" = true
+        echo "gencomp: invalid option combinaton" >&2
+        return 1
+    else if test -n "$action" -a "$is_wrap_mode" = true
         echo "gencomp: invalid option combinaton" >&2
         return 1
     else if test -n "$action" -a "$is_subcmd_parse_mode" = true
@@ -205,6 +214,26 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
     end
 
     switch "$action"
+        case edit
+            switch (count $commands)
+                case 0
+                    echo "gencomp: argument required" >&2
+                    return 1
+                case 1
+                case \*
+                    echo "gencomp: too many arguments" >&2
+                    return 1
+            end
+            
+            set -l path "$gencomp_dir/$commands[1].fish"
+            if type -q "$EDITOR"
+                eval "$EDITOR $path"
+            else if type -q vim
+                eval "vim $path"
+            else 
+                echo "gencomp: editor is not found" >&2
+            end
+
         case erase
             for command in $commands
                 if test -f "$gencomp_dir/$command.fish"
@@ -236,6 +265,18 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                     set output "$gencomp_dir/$command.fish"
                 end
 
+                if test "$is_wrap_mode" = true
+                    if not count $wrap_commands >/dev/null
+                        complete | string match "* --command $command *" >> $output
+                    else
+                        for wrap_command in $wrap_commands
+                            complete -C"$wrap_command " >/dev/null # generate autoload completions
+                            complete \
+                            | string match "* --command $wrap_command *" \
+                            | string replace -- "--command $wrap_command" "--command $command">> $output
+                        end
+                    end
+                    return 0
                 end
 
                 for completion in (__gencomp_parse "$command" "" "$use_command" "$is_subcmd_parse_mode")
