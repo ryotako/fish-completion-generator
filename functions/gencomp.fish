@@ -27,6 +27,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "                       ``{}'' is replaced with the arguments"
         echo "    -w, --wraps        inherit existing completions"
         echo "    -h, --help         show this help"
+        echo
         echo "VARIABLES:"
         echo "    gencomp_dir        directory to save completions"
         echo
