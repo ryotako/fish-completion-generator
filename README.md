@@ -16,18 +16,32 @@ fisher ryotako/fish-completion-generator
 ## Usage
 
 ```fish
+NAME:
+    gencomp - Completion generator for fish-shell
+
 USAGE:
-    gencomp [options] [commands names...]
+    gencomp [options] [command names...]
 
 OPTIONS:
-    -l, --list        list generated completions
-    -e, --erase       erase generated completions
-    -d, --dry-run     print completions without saving
-    -r, --root        print the directory to save completions
-    -s, --subcommand  generate completion for subcommands
-    -u, --use         use the specified command to get usage
-                      ``{}'' is replaced with the arguments
-    -h, --help        show this help
+    -d, --dry-run      print completions without saving
+    --edit             edit a generated completion
+    --erase            erase generated completions
+    -l, --list         list generated completions
+    -r, --root         print the directory to save completions
+    -S, --subcommands  generate completion for subcommands
+    -u, --use          use the specified command to get usage
+                       ``{}'' is replaced with the arguments
+    -w, --wraps        inherit existing completions
+    -h, --help         show this help
+
+VARIABLES:
+    gencomp_dir        directory to save completions
+
+EXAMPLES:
+    gencomp peco
+    gencomp ghq --subcommands
+    gencomp bd --use '{} -h'
+    gencomp my-git --wraps git
 ```
 
 
