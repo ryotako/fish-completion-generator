@@ -268,6 +268,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
 
                 if test "$is_wrap_mode" = true
                     if not count $wrap_commands >/dev/null
+                        complete -C"$command " >/dev/null # generate autoload completions
                         complete | string match "* --command $command *" >> $output
                     else
                         for wrap_command in $wrap_commands
