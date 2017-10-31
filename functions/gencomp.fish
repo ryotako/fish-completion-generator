@@ -55,10 +55,10 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo
     end
 
-    function __gencomp_parse -a cmd sub usage parse_subcommand
+    function __gencomp_parse -a cmd sub use_command is_subcmd_parse_mode
         set -l section default
 
-        eval (string replace -a -- "{}" "$cmd $sub" "$usage") 2>&1 | tr \t ' ' | while read -l line
+        eval (string replace -a -- "{}" "$cmd $sub" "$use_command") 2>&1 | tr \t ' ' | while read -l line
 
             # parse subcommand
             if string match -iqr "^([\w ]* )?commands?( [\w ]*)?" -- "$line"
@@ -74,8 +74,8 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 set -l words (string match -r -- '^ +([\w-]+)(?:, *)\w(?:[,= ] *)(.*)' "$line")
                 if test (count $words) = 3
                     __gencomp_subcommand_completion "$cmd" "$words[2]" "$words[3]"
-                    if test "$parse_subcommand" = true
-                        __gencomp_parse "$cmd" "$words[2]" "$usage" false
+                    if test "$is_subcmd_parse_mode" = true
+                        __gencomp_parse "$cmd" "$words[2]" "$use_command" false
                     end
                     continue
                 end
@@ -86,8 +86,8 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 set -l words (string match -r -- '^ +(\w+)(?:[,= ] *)(.*)' "$line")
                 if test (count $words) = 3
                     __gencomp_subcommand_completion "$cmd" "$words[2]" "$words[3]"
-                    if test "$parse_subcommand" = true
-                        __gencomp_parse "$cmd" "$words[2]" "$usage" false
+                    if test "$is_subcmd_parse_mode" = true
+                        __gencomp_parse "$cmd" "$words[2]" "$use_command" false
                     end
                     continue
                 end
@@ -139,9 +139,11 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
     set -l value
     set -l action
     set -l commands
+    set -l use_command '{} --help'
+    set -l wrap_commands
     set -l is_dry_run false
-    set -l parse_subcommand false
-    set -l usage "{} --help"
+    set -l is_wrap_mode false
+    set -l is_subcmd_parse_mode false
 
     begin 
         argu {e,erase} {l,list} {d,dry-run} {h,help} {r,root} {s,subcommand}\
@@ -151,34 +153,43 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
          switch "$key"
             case _
                 set commands $commands "$value"
-            case -e --erase
-                set action $action erase 
-            case -l --list
-                set action $action list
+
             case -d --dry-run
                 set is_dry_run true
+
+            case --erase
+                set action $action erase 
+
+            case -l --list
+                set action $action list
+
             case -r --root
                 echo "$gencomp_dir"
                 return
+
             case -s --subcommand
-                set parse_subcommand true
+                set is_subcmd_parse_mode true
+
             case -u --use
-                set usage "$value"
+                set use_command $use_commands $value
+
+            case -w --wraps
             case -h --help
                 __gencomp_usage
                 return
         end
     end
-
+    
+    # argument check
     if begin count $argv >/dev/null; and test "$key" = unparsed; end
-        return 1
+        return 1 # parse error by argu
     else if test (count $action) -gt 1
         echo "gencomp: invalid option combinaton" >&2
         return 1
     else if test -n "$action" -a "$is_dry_run" = true
         echo "gencomp: invalid option combinaton" >&2
         return 1
-    else if test -n "$action" -a "$parse_subcommand" = true
+    else if test -n "$action" -a "$is_subcmd_parse_mode" = true
         echo "gencomp: invalid option combinaton" >&2
         return 1
     end
@@ -188,9 +199,9 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         set action (count $commands >/dev/null; and echo complete; or echo list)
     end
     
-    # subcommand parsing requires a place holder in $usage
-    if not string match -q "*{}*" -- "$usage"
-        set parse_subcommand false
+    # subcommand parsing requires a place holder in $use_command
+    if not string match -q "*{}*" -- "$use_command"
+        set is_subcmd_parse_mode false
     end
 
     switch "$action"
@@ -200,32 +211,39 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                     rm "$gencomp_dir/$command.fish"
                 end
             end
+
         case list
             for path in "$gencomp_dir"/*.fish
                 basename "$path" .fish 
             end
-        case complete
 
+        case complete
             for command in $commands
                 if not type -q "$command"
                     echo "gencomp: command '$command' is not found" >&2
                     continue
                 end
-
-                if test "$is_dry_run" != true
+               
+                set -l output
+                if test "$is_dry_run" = true
+                    set output /dev/stdout
+                else
                     mkdir -p "$gencomp_dir"
                     or continue
-
-                    echo > "$gencomp_dir/$command.fish"
+                    echo -n > "$gencomp_dir/$command.fish"
                     or continue
+
+                    set output "$gencomp_dir/$command.fish"
                 end
 
-                for completion in (__gencomp_parse "$command" "" "$usage" "$parse_subcommand")
+                end
+
+                for completion in (__gencomp_parse "$command" "" "$use_command" "$is_subcmd_parse_mode")
                     if test "$is_dry_run" = true
                         echo "$completion"
                     else
                         eval "$completion"
-                        and echo "$completion" >> "$gencomp_dir/$command.fish"
+                        and echo "$completion" >> $output
                     end
                 end
             end 
