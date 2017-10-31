@@ -3,7 +3,7 @@ complete -x -c gencomp -l erase -a '(gencomp --list)' -d 'erase generated comple
 complete -x -c gencomp -s d -l dry-run -d 'print completions without saving'
 complete -x -c gencomp -s l -l list -d 'list generated completions'
 complete -x -c gencomp -s r -l root -d 'print the directory to save completions'
-complete -x -c gencomp -s s -l subcommand -d 'generate completion for subcommands'
+complete -x -c gencomp -s S -l subcommands -d 'generate completion for subcommands'
 complete -x -c gencomp -s u -l use -d 'use the specified command to get usage'
 complete -x -c gencomp -s w -l wraps -d 'inherit existing completions'
 complete -x -c gencomp -s h -l help -d 'show this help'

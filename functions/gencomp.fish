@@ -17,23 +17,24 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "    gencomp [options] [command names...]"
         echo
         echo "OPTIONS:"
-        echo "    -d, --dry-run     print completions without saving"
-        echo "    --edit            edit a generated completion"
-        echo "    --erase           erase generated completions"
-        echo "    -l, --list        list generated completions"
-        echo "    -r, --root        print the directory to save completions"
-        echo "    -S, --subcommand  generate completion for subcommands"
-        echo "    -u, --use         use the specified command to get usage"
-        echo "                      ``{}'' is replaced with the arguments"
-        echo "    -w, --wraps       inherit existing completions"
-        echo "    -h, --help        show this help"
+        echo "    -d, --dry-run      print completions without saving"
+        echo "    --edit             edit a generated completion"
+        echo "    --erase            erase generated completions"
+        echo "    -l, --list         list generated completions"
+        echo "    -r, --root         print the directory to save completions"
+        echo "    -S, --subcommands  generate completion for subcommands"
+        echo "    -u, --use          use the specified command to get usage"
+        echo "                       ``{}'' is replaced with the arguments"
+        echo "    -w, --wraps        inherit existing completions"
+        echo "    -h, --help         show this help"
         echo "VARIABLES:"
-        echo "    gencomp_dir       directory to save completions"
+        echo "    gencomp_dir        directory to save completions"
         echo
         echo "EXAMPLES:"
         echo "    gencomp peco"
-        echo "    gencomp ghq -s"
-        echo "    gencomp bd -u '{} -h'"
+        echo "    gencomp ghq --subcommands"
+        echo "    gencomp bd --use '{} -h'"
+        echo "    gencomp my-git --wraps git"
     end
 
     function __gencomp_option_completion -a cmd sub short long old desc
@@ -147,7 +148,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
     set -l is_wrap_mode false
     set -l is_subcmd_parse_mode false
 
-    argu {d,dry-run} {edit} {erase} {l,list} {r,root} {S,subcommand}\
+    argu {d,dry-run} {edit} {erase} {l,list} {r,root} {S,subcommands}\
             {u,use}: {w,wraps}:: {h,help} -- $argv | while read key value
          switch "$key"
             case _
@@ -169,7 +170,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 echo "$gencomp_dir"
                 return
 
-            case -s --subcommand
+            case -s --subcommands
                 set is_subcmd_parse_mode true
 
             case -u --use

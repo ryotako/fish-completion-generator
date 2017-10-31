@@ -79,7 +79,7 @@ complete -f -c __gencomp_dummy_command1 -n __fish_use_subcommand -a help -d 'Sho
 end
 
 test "generate completions of subcommands' option"
-    "--fullpath" = (gencomp __gencomp_dummy_command1 --subcommand;\
+    "--fullpath" = (gencomp __gencomp_dummy_command1 --subcommands;\
         complete -C"__gencomp_dummy_command1 list -" | awk '{print $1}')
 end
 
