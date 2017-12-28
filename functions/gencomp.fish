@@ -48,14 +48,14 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         test -n "$short" ; and echo -n ' -s '(string escape -- "$short")
         test -n "$long"  ; and echo -n ' -l '(string escape -- "$long")
         test -n "$old"   ; and echo -n ' -s '(string escape -- "$old")
-        test -n "$desc"  ; and echo -n ' -d '(string trim "$desc" | string escape)
+        test -n "$desc"  ; and echo -n ' -d '(string trim -- "$desc" | string escape)
         echo
     end
 
     function __gencomp_subcommand_completion -a cmd sub desc
         echo -n "complete -f -c $cmd"
         echo -n " -n __fish_use_subcommand -a "(string escape -- "$sub")
-        echo -n " -d "(string trim "$desc" | string escape)
+        echo -n " -d "(string trim -- "$desc" | string escape)
         echo
     end
 
