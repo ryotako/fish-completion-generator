@@ -1,7 +1,7 @@
 function gencomp -d 'generate completions for fish-shell with usage messages'
     # variable
     if test -z "$gencomp_dir"
-        if test -z "XDG_CONFIG_HOME"
+        if test -z "$XDG_CONFIG_HOME"
             set -g gencomp_dir "$XDG_CONFIG_HOME/fish/generated_completions"
         else
             set -g gencomp_dir "$HOME/.config/fish/generated_completions"
@@ -45,10 +45,14 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         else if test -n "$sub"
             echo -n ' -n '(string escape -- "__fish_seen_subcommand_from $sub")
         end
-        test -n "$short" ; and echo -n ' -s '(string escape -- "$short")
-        test -n "$long"  ; and echo -n ' -l '(string escape -- "$long")
-        test -n "$old"   ; and echo -n ' -s '(string escape -- "$old")
-        test -n "$desc"  ; and echo -n ' -d '(string trim -- "$desc" | string escape)
+        test -n "$short"
+        and echo -n ' -s '(string escape -- "$short")
+        test -n "$long"
+        and echo -n ' -l '(string escape -- "$long")
+        test -n "$old"
+        and echo -n ' -s '(string escape -- "$old")
+        test -n "$desc"
+        and echo -n ' -d '(string trim -- "$desc" | string escape)
         echo
     end
 
@@ -95,7 +99,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                     end
                     continue
                 end
-                
+
                 set section default
             end
 
@@ -107,7 +111,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 __gencomp_option_completion "$cmd" "$sub" "$words[2]" "$words[3]" "" "$words[4]"
                 continue
             end
-            
+
             # e.g.) --help, -h  show help
             set -l words (string match -r -- "^ *--(\w[\w-]+)(?:, | )-(\w) +(.*)" "$line")
             if test (count $words) = 4
@@ -139,85 +143,57 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         end
     end
 
-    set -l key unparsed
-    set -l value
-    set -l action
-    set -l commands
-    set -l use_command '{} --help'
-    set -l wrap_commands
-    set -l is_dry_run false
-    set -l is_wrap_mode false
-    set -l is_subcmd_parse_mode false
+    argparse -n gencomp -x 'E,e,l' -x 'E,d' -x 'e,d' -x 'l,d' -x 'E,S' -x 'e,S' -x 'l,S' \
+        'd/dry-run' 'E-edit' 'e-erase' 'l/list' 'r/root' 'S/subcommands' 'u/use=' 'w/wraps=+' -- $argv
+    or return 1
 
-    argu {d,dry-run} {edit} {erase} {l,list} {r,root} {S,subcommands}\
-            {u,use}: {w,wraps}:: {h,help} -- $argv | while read key value
-         switch "$key"
-            case _
-                set commands $commands "$value"
-
-            case -d --dry-run
-                set is_dry_run true
-
-            case --edit
-                set action $action edit
-
-            case --erase
-                set action $action erase 
-
-            case -l --list
-                set action $action list
-
-            case -r --root
-                echo "$gencomp_dir"
-                return
-
-            case -s --subcommands
-                set is_subcmd_parse_mode true
-
-            case -u --use
-                set use_command $use_commands $value
-
-            case -w --wraps
-                set is_wrap_mode true
-                test -n "$value"
-                and set wrap_commands $wrap_commands $value
-
-            case -h --help
-                __gencomp_usage
-                return
-        end
+    if set -q _flag_r
+        echo "$gencomp_dir"
+        return
     end
-    
-    # argument check
-    if begin count $argv >/dev/null; and test "$key" = unparsed; end
-        return 1 # parse error by argu
-    else if test (count $action) -gt 1
-        echo "gencomp: invalid option combinaton" >&2
-        return 1
-    else if test -n "$action" -a "$is_dry_run" = true
-        echo "gencomp: invalid option combinaton" >&2
-        return 1
-    else if test -n "$action" -a "$is_wrap_mode" = true
-        echo "gencomp: invalid option combinaton" >&2
-        return 1
-    else if test -n "$action" -a "$is_subcmd_parse_mode" = true
-        echo "gencomp: invalid option combinaton" >&2
-        return 1
+
+    if set -q _flag_h
+        __gencomp_usage
+        return
     end
 
     # default action
-    if test -z "$action"
-        set action (count $commands >/dev/null; and echo complete; or echo list)
-    end
-    
+    count $argv >/dev/null
+    and set -l action complete
+    or set -l action list
+
+    set -lq _flag_edit
+    and set action edit
+
+    set -lq _flag_erase
+    and set action erase
+
+    set -lq _flag_l
+    and set action list
+
+    set -lq _flag_d
+    and set -l is_dry_run true
+    or set -l is_dry_run false
+
+    set -lq _flag_u
+    and set -l use_command $_flag_u
+    or set -l use_command '{} --help'
+
+    set -lq _flag_w
+    and set -l wrap_commands $_flag_w
+    or set -l wrap_commands
+
+    set -lq _flag_S
+    and set -l is_subcmd_parse_mode true
+    or set -l is_subcmd_parse_mode false
+
     # subcommand parsing requires a place holder in $use_command
-    if not string match -q "*{}*" -- "$use_command"
-        set is_subcmd_parse_mode false
-    end
+    string match -q "*{}*" -- "$use_command"
+    or set -l is_subcmd_parse_mode false
 
     switch "$action"
         case edit
-            switch (count $commands)
+            switch (count $argv)
                 case 0
                     echo "gencomp: argument required" >&2
                     return 1
@@ -226,57 +202,55 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                     echo "gencomp: too many arguments" >&2
                     return 1
             end
-            
-            set -l path "$gencomp_dir/$commands[1].fish"
+
+            set -l path "$gencomp_dir/$argv[1].fish"
             if type -q "$EDITOR"
                 eval "$EDITOR $path"
             else if type -q vim
                 eval "vim $path"
-            else 
+            else
                 echo "gencomp: editor is not found" >&2
             end
 
         case erase
-            for command in $commands
-                if test -f "$gencomp_dir/$command.fish"
-                    rm "$gencomp_dir/$command.fish"
+            for cmd in $argv
+                if test -f "$gencomp_dir/$cmd.fish"
+                    rm "$gencomp_dir/$cmd.fish"
                 end
             end
 
         case list
             for path in "$gencomp_dir"/*.fish
-                basename "$path" .fish 
+                basename "$path" .fish
             end
 
         case complete
-            for command in $commands
+            for command in $argv
                 if not type -q "$command"
                     echo "gencomp: command '$command' is not found" >&2
                     continue
                 end
-               
+
                 set -l output
                 if test "$is_dry_run" = true
                     set output /dev/stdout
                 else
                     mkdir -p "$gencomp_dir"
                     or continue
-                    echo -n > "$gencomp_dir/$command.fish"
+                    echo -n >"$gencomp_dir/$command.fish"
                     or continue
 
                     set output "$gencomp_dir/$command.fish"
                 end
 
-                if test "$is_wrap_mode" = true
+                if count $wrap_commands >/dev/null
                     if not count $wrap_commands >/dev/null
                         complete -C"$command " >/dev/null # generate autoload completions
-                        complete | string match "* --command $command *" >> $output
+                        complete | string match "* --command $command *" >>$output
                     else
                         for wrap_command in $wrap_commands
                             complete -C"$wrap_command " >/dev/null # generate autoload completions
-                            complete \
-                            | string match "* --command $wrap_command *" \
-                            | string replace -- "--command $wrap_command" "--command $command">> $output
+                            complete | string match "* --command $wrap_command *" | string replace -- "--command $wrap_command" "--command $command" >>$output
                         end
                     end
                     return 0
@@ -287,10 +261,10 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                         echo "$completion"
                     else
                         eval "$completion"
-                        and echo "$completion" >> $output
+                        and echo "$completion" >>$output
                     end
                 end
-            end 
+            end
 
     end
 end
