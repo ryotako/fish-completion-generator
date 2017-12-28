@@ -1,11 +1,9 @@
 function gencomp -d 'generate completions for fish-shell with usage messages'
-    # variable
+    # set variable
     if test -z "$gencomp_dir"
-        if test -z "$XDG_CONFIG_HOME"
-            set -g gencomp_dir "$XDG_CONFIG_HOME/fish/generated_completions"
-        else
-            set -g gencomp_dir "$HOME/.config/fish/generated_completions"
-        end
+        test -n "$XDG_CONFIG_HOME"
+        and set -g gencomp_dir "$XDG_CONFIG_HOME/fish/generated_completions"
+        or  set -g gencomp_dir "$HOME/.config/fish/generated_completions"
     end
 
     # usage
@@ -38,6 +36,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "    gencomp my-git --wraps git"
     end
 
+    # generate `complete ...` statement for option completion
     function __gencomp_option_completion -a cmd sub short long old desc
         echo -n "complete -c $cmd"
         if test "$long" = version
@@ -56,6 +55,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo
     end
 
+    # generate `complete ...` statement for subcommand completion
     function __gencomp_subcommand_completion -a cmd sub desc
         echo -n "complete -f -c $cmd"
         echo -n " -n __fish_use_subcommand -a "(string escape -- "$sub")
@@ -63,6 +63,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo
     end
 
+    # parse the usage message
     function __gencomp_parse -a cmd sub use_command is_subcmd_parse_mode
         set -l section default
 
@@ -143,6 +144,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         end
     end
 
+    # option parsing with argparse(fish2.7.0)
     argparse -n gencomp -x 'E,e,l' -x 'E,d' -x 'e,d' -x 'l,d' -x 'E,S' -x 'e,S' -x 'l,S' \
         'd/dry-run' 'E-edit' 'e-erase' 'l/list' 'r/root' 'S/subcommands' 'u/use=' 'w/wraps=+' -- $argv
     or return 1
