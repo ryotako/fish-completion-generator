@@ -92,7 +92,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
                 # e.g.)
                 # COMMANDS
                 #     command    do simething
-                set -l words (string match -r -- '^ +(\w+)(?:[,= ] *)(.*)' "$line")
+                set -l words (string match -r -- '^ +([\w-]+)(?:[,= ] *)(.*)' "$line")
                 if test (count $words) = 3
                     __gencomp_subcommand_completion "$cmd" "$words[2]" "$words[3]"
                     if test "$is_subcmd_parse_mode" = true
