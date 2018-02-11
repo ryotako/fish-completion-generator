@@ -15,7 +15,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
         echo "    gencomp [options] [command names...]"
         echo
         echo "OPTIONS:"
-        echo "    -d, --dry-run      print completions without saving"
+        echo "    -d, --dry-run      print completions without execution"
         echo "    --edit             edit a generated completion"
         echo "    --erase            erase generated completions"
         echo "    -l, --list         list generated completions"
@@ -146,7 +146,7 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
 
     # option parsing with argparse(fish2.7.0)
     argparse -n gencomp -x 'E,e,l' -x 'E,d' -x 'e,d' -x 'l,d' -x 'E,S' -x 'e,S' -x 'l,S' \
-        'd/dry-run' 'E-edit' 'e-erase' 'l/list' 'r/root' 'S/subcommands' 'u/use=' 'w/wraps=+' -- $argv
+        'd/dry-run' 'E-edit' 'e-erase' 'l/list' 'r/root' 'S/subcommands' 'u/use=' 'w/wraps=+' 'h/help' -- $argv
     or return 1
 
     if set -q _flag_r
@@ -188,6 +188,11 @@ function gencomp -d 'generate completions for fish-shell with usage messages'
     set -lq _flag_S
     and set -l is_subcmd_parse_mode true
     or set -l is_subcmd_parse_mode false
+
+    if set -lq _flag_h
+        __gencomp_usage
+        return
+    end
 
     # subcommand parsing requires a place holder in $use_command
     string match -q "*{}*" -- "$use_command"
