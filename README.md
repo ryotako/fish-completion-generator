@@ -1,3 +1,5 @@
+:us: [:jp:](https://github.com/ryotako/fish-completion-generator/wiki)
+
 # fish-completion-generator
 
 [![Build Status][travis-badge]][travis-link]
@@ -24,7 +26,7 @@ USAGE:
     gencomp [options] [command names...]
 
 OPTIONS:
-    -d, --dry-run      print completions without saving
+    -d, --dry-run      print completions without execution
     --edit             edit a generated completion
     --erase            erase generated completions
     -l, --list         list generated completions
